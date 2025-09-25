@@ -1,89 +1,50 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: csc-rahti-demo
-  labels:
-    app: csc-rahti-demo
-    version: v1
+  name: sagar-demo-app
 spec:
-  replicas: 2
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 1
+  replicas: 1
   selector:
     matchLabels:
-      app: csc-rahti-demo
+      app: sagar-demo-app
   template:
     metadata:
       labels:
-        app: csc-rahti-demo
-        version: v1
+        app: sagar-demo-app
     spec:
-      # Security context for Rahti compatibility - let OpenShift assign user ID
-      securityContext:
-        runAsNonRoot: true
-        # Remove runAsUser and fsGroup - let OpenShift assign them automatically
       containers:
-      - name: csc-rahti-demo
-        image: image-registry.openshift-image-registry.svc:5000/my-demo-project/csc-rahti-demo:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
-          name: http
-          protocol: TCP
-        # Environment variables
-        env:
-        - name: FLASK_ENV
-          value: "production"
-        - name: PORT
-          value: "8080"
-        - name: SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: app-secrets
-              key: secret-key
-              optional: true
-        # Resource limits and requests
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
-        # Health checks
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 8080
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
-        # Security context for container - let OpenShift assign user ID
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
-          runAsNonRoot: true
-          capabilities:
-            drop:
-            - ALL
-        # Volume mounts (if needed)
-        volumeMounts:
-        - name: temp-storage
-          mountPath: /tmp
-      volumes:
-      - name: temp-storage
-        emptyDir: {}
-      # Restart policy
-      restartPolicy: Always
+        - name: sagar-demo-app
+          image: <leave-blank-for-Rahti-to-build-from-Git>
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sagar-demo-app-service
+spec:
+  type: ClusterIP
+  selector:
+    app: sagar-demo-app
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sagar-demo-app-ingress
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - host: <Rahti-will-assign-domain>
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sagar-demo-app-service
+                port:
+                  number: 8080
