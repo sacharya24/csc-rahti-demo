@@ -153,3 +153,4 @@ tmp/
 # Logs
 logs/
 *.log
+node_modules/
